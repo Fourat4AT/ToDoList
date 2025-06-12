@@ -4,25 +4,37 @@ import notesRoutes from "./routes/notesRoutes.js";
 import { connectDB } from "./config/db.js";
 import dotenv from "dotenv";
 import rateLimiter from "./middleware/rateLimiter.js";
+import path from "path";
 
 const app = express();
 dotenv.config();
-console.log(process.env.MONGO_URI);
 
 const PORT = process.env.PORT || 5001;
-
+const __dirname = path.resolve()
 
 // Middleware pour parser JSON
+if (process.env.NODE_ENV !== "production"){
+
 app.use(cors(
     {origin:"http://localhost:5173",}
     
 ))
+}
 app.use(express.json());
 app.use(rateLimiter)
 
+ 
+// Montre le routeur complet  
+if (process.env.NODE_ENV === "production"){
+    app.use("/api/notes", notesRoutes);
+app.use(express.static(path.join(__dirname,"../frontend/dist")))
 
-// Montre le routeur complet
-app.use("/api/notes", notesRoutes);
+app.get("*",(req,res)=>{
+    res.sendFile(path.join(__dirname,"../frontend","dist","index.html"))
+})
+}
+
+
 connectDB().then (() =>{
     app.listen(PORT, () => {
     console.log("Server Started On PORT :", PORT);
